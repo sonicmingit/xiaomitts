@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MiMo TTS 能力测试台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Xiaomi MiMo · Speech Synthesis Playground</p>
+          <h1>MiMo TTS 能力测试台</h1>
+          <p class="hero-text">
+            针对官方文档中明确支持的 `mimo-v2-tts`、预置音色、整体风格标签、细粒度音频标签、方言、角色扮演与唱歌场景，做成一页式测试面板。
+          </p>
+        </div>
+        <div class="hero-card">
+          <div class="hero-stat">
+            <span>模型</span>
+            <strong>mimo-v2-tts</strong>
+          </div>
+          <div class="hero-stat">
+            <span>预置音色</span>
+            <strong>3 个</strong>
+          </div>
+          <div class="hero-stat">
+            <span>测试模板</span>
+            <strong>12 个</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel controls-panel">
+          <div class="panel-head">
+            <h2>请求配置</h2>
+            <p>填写 API Key 后即可直接发起合成请求。页面会在本地缓存配置。</p>
+          </div>
+
+          <div class="form-grid">
+            <label class="field">
+              <span>API Key</span>
+              <input id="apiKey" type="password" placeholder="输入 MIMO_API_KEY" />
+            </label>
+
+            <label class="field">
+              <span>接口地址</span>
+              <input id="endpoint" type="text" value="https://api.xiaomimimo.com/v1/chat/completions" />
+            </label>
+
+            <label class="field">
+              <span>模型</span>
+              <input id="model" type="text" value="mimo-v2-tts" readonly />
+            </label>
+
+            <label class="field">
+              <span>音频格式</span>
+              <input id="audioFormat" type="text" value="wav" />
+            </label>
+
+            <label class="field">
+              <span>预置音色</span>
+              <select id="voice">
+                <option value="mimo_default">MiMo-默认 · mimo_default</option>
+                <option value="default_zh">MiMo-中文女声 · default_zh</option>
+                <option value="default_eh">MiMo-英文女声 · default_eh</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>测试模板</span>
+              <select id="templateSelect"></select>
+            </label>
+          </div>
+
+          <div class="style-builder">
+            <div class="style-column">
+              <div class="subhead">
+                <h3>整体风格控制</h3>
+                <button id="clearStylesBtn" class="ghost-btn" type="button">清空风格</button>
+              </div>
+              <div id="styleChips" class="chip-grid"></div>
+              <label class="field">
+                <span>自定义风格</span>
+                <input id="customStyles" type="text" placeholder="例如：播音腔、温柔、悬疑、青春感" />
+              </label>
+              <p class="tip">
+                页面会把已选风格拼成 `&lt;style&gt;...&lt;/style&gt;` 并放在文本开头。若包含“唱歌”，将按文档要求只保留 `唱歌`。
+              </p>
+            </div>
+
+            <div class="style-column">
+              <div class="subhead">
+                <h3>细粒度音频标签</h3>
+                <button id="insertTagsBtn" class="ghost-btn" type="button">插入到正文</button>
+              </div>
+              <div id="audioTagChips" class="chip-grid"></div>
+              <p class="tip">这些标签将以中文括号形式插入正文，方便测试停顿、呼吸、情绪切换和节奏变化。</p>
+            </div>
+          </div>
+
+          <div class="field-stack">
+            <label class="field">
+              <span>User 角色上下文</span>
+              <textarea
+                id="userPrompt"
+                rows="4"
+                placeholder="可选，用于给模型补充场景信息或语气要求。文档建议在部分场景携带。"
+              ></textarea>
+            </label>
+
+            <label class="field">
+              <span>Assistant 角色待合成文本</span>
+              <textarea id="assistantText" rows="12" placeholder="这里填写真正要转语音的文本"></textarea>
+            </label>
+          </div>
+
+          <div class="actions">
+            <button id="applyTemplateBtn" class="secondary-btn" type="button">应用模板</button>
+            <button id="buildPromptBtn" class="secondary-btn" type="button">生成带风格文本</button>
+            <button id="synthesizeBtn" class="primary-btn" type="button">开始合成</button>
+          </div>
+        </section>
+
+        <section class="panel preview-panel">
+          <div class="panel-head">
+            <h2>能力覆盖与预览</h2>
+            <p>这里会展示最终请求体、文本预览和返回音频，便于逐项核对能力是否生效。</p>
+          </div>
+
+          <div class="capability-grid" id="capabilityGrid"></div>
+
+          <div class="preview-card">
+            <div class="subhead">
+              <h3>最终待合成文本</h3>
+              <button id="copyPromptBtn" class="ghost-btn" type="button">复制文本</button>
+            </div>
+            <pre id="finalPromptPreview" class="code-block"></pre>
+          </div>
+
+          <div class="preview-card">
+            <div class="subhead">
+              <h3>请求 JSON 预览</h3>
+              <button id="copyJsonBtn" class="ghost-btn" type="button">复制 JSON</button>
+            </div>
+            <pre id="requestPreview" class="code-block"></pre>
+          </div>
+
+          <div class="preview-card audio-card">
+            <div class="subhead">
+              <h3>返回音频</h3>
+              <span id="statusBadge" class="status idle">待发起</span>
+            </div>
+            <audio id="audioPlayer" controls></audio>
+            <div class="audio-actions">
+              <a id="downloadAudioBtn" class="secondary-link disabled" href="#" download="mimo-tts-output.wav">下载音频</a>
+            </div>
+            <pre id="responseMeta" class="code-block small"></pre>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
